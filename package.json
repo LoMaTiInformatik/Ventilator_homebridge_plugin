@@ -1,8 +1,8 @@
 {
-  "name": "homebridge-bridged-camera-example",
+  "name": "arduino-ventilator-lomati",
   "version": "1.0.0",
-  "description": "An example dynamic platform plugin exposing cameras behind a bridge for homebridge written in Typescript",
-  "main": "dist/dynamic-camera-platform.js",
+  "description": "Ventilator Einbindung in Homebridge für die Arduino Ventilatorsteuerung von LoMaTi.",
+  "main": "dist/accessory.js",
   "scripts": {
     "clean": "rimraf ./dist",
     "build": "rimraf ./dist && tsc",
@@ -10,7 +10,7 @@
     "postpublish": "npm run clean",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Andreas Bauer <mail@anderl-bauer.de>",
+  "author": "Lois Gilly <lois.kian.gilly@isurfstormarn.de>",
   "engines": {
     "homebridge": ">=1.0.0"
   },
@@ -24,17 +24,13 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/homebridge/homebridge-examples.git"
+    "url": "git://github.com/LoMaTiInformatik/Ventilator_homebridge_plugin"
   },
   "bugs": {
-    "url": "http://github.com/homebridge/homebridge-examples/issues"
-  },
-  "dependencies": {
-    "ip": "^1.1.5"
+    "url": "http://github.com/LoMaTiInformatik/Ventilator_homebridge_plugin/issues"
   },
   "devDependencies": {
     "@types/node": "10.17.19",
-    "@types/ip": "^1.1.0",
     "typescript": "^3.8.3",
     "rimraf": "^3.0.2",
     "homebridge": "^1.0.4"
