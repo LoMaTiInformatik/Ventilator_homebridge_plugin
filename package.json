@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "homebridge-arduino-ventilator-lomati",
   "version": "1.0.1",
   "description": "Ventilator Einbindung in Homebridge für die Arduino Ventilatorsteuerung von LoMaTi.",
