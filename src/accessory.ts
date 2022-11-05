@@ -7,6 +7,7 @@ import {
   CharacteristicSetCallback,
   CharacteristicValue,
   HAP,
+  HapStatusError,
   Logging,
   Service
 } from "homebridge";
@@ -40,39 +41,42 @@ let hap: HAP;
  */
 export = (api: API) => {
   hap = api.hap;
-  api.registerAccessory("Test", ExampleSwitch);
+  api.registerAccessory("Ventilator", VentilatorPl);
 };
 
-class ExampleSwitch implements AccessoryPlugin {
+class VentilatorPl implements AccessoryPlugin {
 
   private readonly log: Logging;
   private readonly name: string;
-  private switchOn = false;
 
-  private readonly switchService: Service;
+  private readonly ventilatorService: Service;
   private readonly informationService: Service;
 
   constructor(log: Logging, config: AccessoryConfig, api: API) {
     this.log = log;
     this.name = config.name;
 
-    this.switchService = new hap.Service.Switch(this.name);
-    this.switchService.getCharacteristic(hap.Characteristic.On)
-      .on(CharacteristicEventTypes.GET, (callback: CharacteristicGetCallback) => {
-        log.info("Current state of the switch was returned: " + (this.switchOn? "ON": "OFF"));
-        callback(undefined, this.switchOn);
-      })
-      .on(CharacteristicEventTypes.SET, (value: CharacteristicValue, callback: CharacteristicSetCallback) => {
-        this.switchOn = value as boolean;
-        log.info("Switch state was set to: " + (this.switchOn? "ON": "OFF"));
-        callback();
-      });
+    this.ventilatorService = new hap.Service.Fanv2(this.name);
+    this.ventilatorService.getCharacteristic(hap.Characteristic.Active)
+      .onGet(this.handleActiveGet.bind(this))
+      .onSet(this.handleActiveSet.bind(this));
 
     this.informationService = new hap.Service.AccessoryInformation()
-      .setCharacteristic(hap.Characteristic.Manufacturer, "Custom Manufacturer")
-      .setCharacteristic(hap.Characteristic.Model, "Custom Model");
+      .setCharacteristic(hap.Characteristic.Manufacturer, "LoMaTi")
+      .setCharacteristic(hap.Characteristic.Model, "Arduino Ventilator");
 
     log.info("Switch finished initializing!");
+  }
+
+  handleActiveGet() {
+    return hap.Characteristic.Active.ACTIVE;
+  }
+  handleActiveSet(value: CharacteristicValue) {
+    if (value == hap.Characteristic.Active.INACTIVE) {
+      console.log("No");
+    } else {
+      console.log("Yes");
+    }
   }
 
   /*
@@ -90,7 +94,7 @@ class ExampleSwitch implements AccessoryPlugin {
   getServices(): Service[] {
     return [
       this.informationService,
-      this.switchService,
+      this.ventilatorService,
     ];
   }
 
