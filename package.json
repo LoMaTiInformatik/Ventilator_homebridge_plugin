@@ -4,6 +4,7 @@
   "description": "Ventilator Einbindung in Homebridge für die Arduino Ventilatorsteuerung von LoMaTi.",
   "main": "dist/accessory.js",
   "scripts": {
+    "lint": "eslint src/**.ts --max-warnings=0",
     "clean": "rimraf ./dist",
     "build": "rimraf ./dist && tsc",
     "prepublishOnly": "npm run build",
