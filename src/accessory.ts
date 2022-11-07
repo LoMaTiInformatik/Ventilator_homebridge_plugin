@@ -75,28 +75,32 @@ class VentilatorPl implements AccessoryPlugin {
     this.ventilatorService.getCharacteristic(hap.Characteristic.RotationSpeed)
       .onGet(this.handleRotationSpeedGet.bind(this))
       .onSet(this.handleRotationSpeedSet.bind(this));
+    
+    this.ventilatorService.getCharacteristic(hap.Characteristic.SwingMode);
+      
 
     this.informationService = new hap.Service.AccessoryInformation()
       .setCharacteristic(hap.Characteristic.Manufacturer, "LoMaTi")
-      .setCharacteristic(hap.Characteristic.Model, "Arduino Ventilator");
+      .setCharacteristic(hap.Characteristic.Model, "Arduino Ventilator")
+      .setCharacteristic(hap.Characteristic.SerialNumber, "FAN001");
 
     
     log.info("Switch finished initializing!");
   }
 
+  // Handle requests
+
   handleActiveGet() {
-    switch(this.status.power) {
-      case 0:
-        return hap.Characteristic.Active.INACTIVE;
-      case 1:
-        return hap.Characteristic.Active.ACTIVE;
-    }
+    return this.status.power;
   }
   handleActiveSet(value: CharacteristicValue) {
-    if (value == hap.Characteristic.Active.INACTIVE) {
-      console.log("No");
-    } else {
-      console.log("Yes");
+    switch(value) {
+      case hap.Characteristic.Active.INACTIVE:
+        this.status = this.communicate(1, "power", 0);
+        break;
+      case hap.Characteristic.Active.ACTIVE:
+        this.status = this.communicate(1, "power", 1);
+        break;
     }
   }
   handleRotationSpeedGet() {
@@ -106,6 +110,21 @@ class VentilatorPl implements AccessoryPlugin {
     let num = Math.round(value / 25);
     this.status = this.communicate(1, "speed", num);
   }
+  handleSwingModeGet() {
+    return this.status.swing;
+  }
+  handleSwingModeSet(value: CharacteristicValue) {
+    switch(value) {
+      case hap.Characteristic.SwingMode.SWING_DISABLED:
+        this.status = this.communicate(1, "swing", 0);
+        break;
+      case hap.Characteristic.SwingMode.SWING_ENABLED:
+        this.status = this.communicate(1, "swing", 1);
+        break;
+    }
+  }
+  
+  // Utils
 
   async communicate(type: number, act: string, value: number) {
     let response;
