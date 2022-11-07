@@ -76,14 +76,16 @@ class VentilatorPl implements AccessoryPlugin {
       .onGet(this.handleRotationSpeedGet.bind(this))
       .onSet(this.handleRotationSpeedSet.bind(this));
     
-    this.ventilatorService.getCharacteristic(hap.Characteristic.SwingMode);
-      
+    this.ventilatorService.getCharacteristic(hap.Characteristic.SwingMode)
+      .onGet(this.handleSwingModeGet.bind(this))
+      .onSet(this.handleSwingModeSet.bind(this));
 
     this.informationService = new hap.Service.AccessoryInformation()
       .setCharacteristic(hap.Characteristic.Manufacturer, "LoMaTi")
       .setCharacteristic(hap.Characteristic.Model, "Arduino Ventilator")
       .setCharacteristic(hap.Characteristic.SerialNumber, "FAN001");
 
+    this.status = this.communicate(0, "foo", 0);
     
     log.info("Switch finished initializing!");
   }
