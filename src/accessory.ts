@@ -12,6 +12,9 @@ import {
   Service
 } from "homebridge";
 
+import axios from 'axios';
+import { json } from "stream/consumers";
+
 /*
  * IMPORTANT NOTICE
  *
@@ -48,6 +51,8 @@ class VentilatorPl implements AccessoryPlugin {
 
   private readonly log: Logging;
   private readonly name: string;
+  private readonly ip: string;
+  private status;
 
   private readonly ventilatorService: Service;
   private readonly informationService: Service;
@@ -55,21 +60,37 @@ class VentilatorPl implements AccessoryPlugin {
   constructor(log: Logging, config: AccessoryConfig, api: API) {
     this.log = log;
     this.name = config.name;
+    this.ip = "http://" + config.ip;
+    this.status = {
+      "power": 0,
+      "speed": 1,
+      "swing": 0
+    };
 
     this.ventilatorService = new hap.Service.Fanv2(this.name);
     this.ventilatorService.getCharacteristic(hap.Characteristic.Active)
       .onGet(this.handleActiveGet.bind(this))
       .onSet(this.handleActiveSet.bind(this));
 
+    this.ventilatorService.getCharacteristic(hap.Characteristic.RotationSpeed)
+      .onGet(this.handleRotationSpeedGet.bind(this))
+      .onSet(this.handleRotationSpeedSet.bind(this));
+
     this.informationService = new hap.Service.AccessoryInformation()
       .setCharacteristic(hap.Characteristic.Manufacturer, "LoMaTi")
       .setCharacteristic(hap.Characteristic.Model, "Arduino Ventilator");
 
+    
     log.info("Switch finished initializing!");
   }
 
   handleActiveGet() {
-    return hap.Characteristic.Active.ACTIVE;
+    switch(this.status.power) {
+      case 0:
+        return hap.Characteristic.Active.INACTIVE;
+      case 1:
+        return hap.Characteristic.Active.ACTIVE;
+    }
   }
   handleActiveSet(value: CharacteristicValue) {
     if (value == hap.Characteristic.Active.INACTIVE) {
@@ -77,6 +98,29 @@ class VentilatorPl implements AccessoryPlugin {
     } else {
       console.log("Yes");
     }
+  }
+  handleRotationSpeedGet() {
+    return this.status.speed;
+  }
+  handleRotationSpeedSet(value: CharacteristicValue) {
+    let num = Math.round(value / 25);
+    this.status = this.communicate(1, "speed", num);
+  }
+
+  async communicate(type: number, act: string, value: number) {
+    let response;
+    switch(type) {
+      case 0:
+        response = await axios.get(this.ip + "/getStatus");
+        break;
+      
+      case 1:
+        response = await axios.get(this.ip + "/?act=" + act + "&arg1=" + String(value));
+        break;
+
+    }
+    const data = JSON.parse(response.data);
+    return data;
   }
 
   /*
