@@ -63,7 +63,7 @@ class VentilatorPl implements AccessoryPlugin {
     this.ip = "http://" + config.ip;
     this.status = {
       "power": 0,
-      "speed": 1,
+      "speed": 0,
       "swing": 0
     };
 
@@ -104,7 +104,7 @@ class VentilatorPl implements AccessoryPlugin {
     }
   }
   handleRotationSpeedGet() {
-    return this.status.speed;
+    return this.status.speed * 25;
   }
   handleRotationSpeedSet(value: CharacteristicValue) {
     let num = Math.round(value / 25);
@@ -139,6 +139,15 @@ class VentilatorPl implements AccessoryPlugin {
 
     }
     const data = JSON.parse(response.data);
+    if (response.status == 400) {
+      const text = "An error occured while getting the data: ";
+      console.log(text + data.errmsg);
+      return {
+        "power": 0,
+        "speed": 0,
+        "swing": 0
+      };
+    }
     return data;
   }
 
