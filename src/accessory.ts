@@ -62,9 +62,9 @@ class VentilatorPl implements AccessoryPlugin {
     this.name = config.name;
     this.ip = "http://" + config.ip;
     this.status = {
-      "power": 0,
-      "speed": 0,
-      "swing": 0
+      power: 0,
+      speed: 0,
+      swing: 0
     };
 
     this.ventilatorService = new hap.Service.Fanv2(this.name);
@@ -75,7 +75,7 @@ class VentilatorPl implements AccessoryPlugin {
     this.ventilatorService.getCharacteristic(hap.Characteristic.RotationSpeed)
       .onGet(this.handleRotationSpeedGet.bind(this))
       .onSet(this.handleRotationSpeedSet.bind(this));
-    
+
     this.ventilatorService.getCharacteristic(hap.Characteristic.SwingMode)
       .onGet(this.handleSwingModeGet.bind(this))
       .onSet(this.handleSwingModeSet.bind(this));
@@ -85,38 +85,44 @@ class VentilatorPl implements AccessoryPlugin {
       .setCharacteristic(hap.Characteristic.Model, "Arduino Ventilator")
       .setCharacteristic(hap.Characteristic.SerialNumber, "FAN001");
 
-    this.status = this.communicate(0, "foo", 0);
-    
     log.info("Switch finished initializing!");
   }
 
   // Handle requests
 
   handleActiveGet() {
-    return this.status.power;
+    this.status = this.communicate(0, "no", 0);
+    return this.status.power || this.ventilatorService.getCharacteristic(hap.Characteristic.Active).value || 0;
   }
   handleActiveSet(value: CharacteristicValue) {
-    switch(value) {
-      case hap.Characteristic.Active.INACTIVE:
-        this.status = this.communicate(1, "power", 0);
-        break;
-      case hap.Characteristic.Active.ACTIVE:
-        this.status = this.communicate(1, "power", 1);
-        break;
+    this.status = this.communicate(0, "no", 0);
+    const curval = this.status.power;
+    if (curval != value) {
+      switch (value) {
+        case hap.Characteristic.Active.INACTIVE:
+          this.communicate(1, "power", 0);
+          break;
+        case hap.Characteristic.Active.ACTIVE:
+          this.communicate(1, "power", 1);
+          break;
+      }
     }
   }
   handleRotationSpeedGet() {
-    return this.status.speed * 25;
+    this.status = this.communicate(0, "no", 0);
+    return this.status.speed * 25 || this.ventilatorService.getCharacteristic(hap.Characteristic.RotationSpeed).value || 0;
   }
   handleRotationSpeedSet(value: CharacteristicValue) {
-    let num = Math.round(value / 25);
+    const valnum: any = value.valueOf();
+    let num = Math.floor(valnum / 25);
     this.status = this.communicate(1, "speed", num);
   }
   handleSwingModeGet() {
-    return this.status.swing;
+    this.status = this.communicate(0, "no", 0)
+    return this.status.swing || this.ventilatorService.getCharacteristic(hap.Characteristic.SwingMode).value || 0;
   }
   handleSwingModeSet(value: CharacteristicValue) {
-    switch(value) {
+    switch (value) {
       case hap.Characteristic.SwingMode.SWING_DISABLED:
         this.status = this.communicate(1, "swing", 0);
         break;
@@ -125,29 +131,60 @@ class VentilatorPl implements AccessoryPlugin {
         break;
     }
   }
-  
+
   // Utils
 
   async communicate(type: number, act: string, value: number) {
     let response;
-    switch(type) {
+    switch (type) {
       case 0:
-        response = await axios.get(this.ip + "/getStatus");
+        try {
+          response = await axios.get(this.ip + "/getStatus");
+        } catch {
+          return {
+            power: 0,
+            speed: 0,
+            swing: 0
+          };
+        }
         break;
-      
+
       case 1:
-        response = await axios.get(this.ip + "/?act=" + act + "&arg1=" + String(value));
+        try {
+          response = await axios.get(this.ip + "/?act=" + act + "&arg1=" + String(value));
+        } catch {
+          return {
+            power: 0,
+            speed: 0,
+            swing: 0
+          };
+        }
         break;
 
     }
-    const data = JSON.parse(response.data);
+    let s = String(response.data);
+    s = s.replace(/\\n/g, '\\n')
+      .replace(/\\'/g, '\\\'')
+      .replace(/\\"/g, '\"')
+      .replace(/\\&/g, '\\&')
+      .replace(/\\r/g, '\\r')
+      .replace(/\\t/g, '\\t')
+      .replace(/\\b/g, '\\b')
+      .replace(/\\f/g, '\\f');
+    // Remove non-printable and other non-valid JSON characters
+    // eslint-disable-next-line no-control-regex
+    s = s.replace(/[\u0000-\u0019]+/g, '');
+    console.log(response.data);
+    console.log(s);
+
+    const data = JSON.parse(s);
     if (response.status == 400) {
       const text = "An error occured while getting the data: ";
       console.log(text + data.errmsg);
       return {
-        "power": 0,
-        "speed": 0,
-        "swing": 0
+        power: 0,
+        speed: 0,
+        swing: 0
       };
     }
     return data;
