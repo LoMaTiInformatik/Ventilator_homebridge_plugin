@@ -61,11 +61,9 @@ class VentilatorPl implements AccessoryPlugin {
     this.log = log;
     this.name = config.name;
     this.ip = "http://" + config.ip;
-    this.status = {
-      power: 0,
-      speed: 0,
-      swing: 0
-    };
+    this.communicate(0, "no", 0).then((rep) => {
+      this.status = rep;
+    });
 
     this.ventilatorService = new hap.Service.Fanv2(this.name);
     this.ventilatorService.getCharacteristic(hap.Characteristic.Active)
@@ -86,48 +84,60 @@ class VentilatorPl implements AccessoryPlugin {
       .setCharacteristic(hap.Characteristic.SerialNumber, "FAN001");
 
     log.info("Switch finished initializing!");
+    setInterval(() => {
+      this.communicate(0, "no", 0).then((rep) => {
+        this.status = rep;
+      });
+    }, 1000 * 15);
   }
 
   // Handle requests
 
   handleActiveGet() {
-    this.status = this.communicate(0, "no", 0);
+    this.log.info(this.status);
     return this.status.power || this.ventilatorService.getCharacteristic(hap.Characteristic.Active).value || 0;
   }
   handleActiveSet(value: CharacteristicValue) {
-    this.status = this.communicate(0, "no", 0);
     const curval = this.status.power;
-    if (curval != value) {
+    if (true) {
       switch (value) {
         case hap.Characteristic.Active.INACTIVE:
-          this.communicate(1, "power", 0);
+          this.communicate(1, "power", 0).then((rep) => {
+            this.status = rep;
+          });
           break;
         case hap.Characteristic.Active.ACTIVE:
-          this.communicate(1, "power", 1);
+          this.communicate(1, "power", 1).then((rep) => {
+            this.status = rep;
+          });
           break;
       }
     }
   }
   handleRotationSpeedGet() {
-    this.status = this.communicate(0, "no", 0);
     return this.status.speed * 25 || this.ventilatorService.getCharacteristic(hap.Characteristic.RotationSpeed).value || 0;
   }
   handleRotationSpeedSet(value: CharacteristicValue) {
     const valnum: any = value.valueOf();
     let num = Math.floor(valnum / 25);
-    this.status = this.communicate(1, "speed", num);
+    this.communicate(1, "speed", num).then((rep) => {
+      this.status = rep;
+    });
   }
   handleSwingModeGet() {
-    this.status = this.communicate(0, "no", 0)
     return this.status.swing || this.ventilatorService.getCharacteristic(hap.Characteristic.SwingMode).value || 0;
   }
   handleSwingModeSet(value: CharacteristicValue) {
     switch (value) {
       case hap.Characteristic.SwingMode.SWING_DISABLED:
-        this.status = this.communicate(1, "swing", 0);
+        this.communicate(1, "swing", 0).then((rep) => {
+          this.status = rep;
+        });
         break;
       case hap.Characteristic.SwingMode.SWING_ENABLED:
-        this.status = this.communicate(1, "swing", 1);
+        this.communicate(1, "swing", 1).then((rep) => {
+          this.status = rep;
+        });
         break;
     }
   }
@@ -139,7 +149,7 @@ class VentilatorPl implements AccessoryPlugin {
     switch (type) {
       case 0:
         try {
-          response = await axios.get(this.ip + "/getStatus");
+          response = await axios.get(this.ip + "/getStatus", {timeout: 2000});
         } catch {
           return {
             power: 0,
@@ -151,7 +161,7 @@ class VentilatorPl implements AccessoryPlugin {
 
       case 1:
         try {
-          response = await axios.get(this.ip + "/?act=" + act + "&arg1=" + String(value));
+          response = await axios.get(this.ip + "/?act=" + act + "&arg1=" + String(value), {timeout: 3000});
         } catch {
           return {
             power: 0,
