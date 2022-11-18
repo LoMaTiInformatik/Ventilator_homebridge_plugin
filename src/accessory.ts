@@ -61,6 +61,11 @@ class VentilatorPl implements AccessoryPlugin {
     this.log = log;
     this.name = config.name;
     this.ip = "http://" + config.ip;
+    this.status = {
+      power: 0,
+      speed: 0,
+      swing: 0
+    };
     this.communicate(0, "no", 0).then((rep) => {
       this.status = rep;
     });
@@ -84,18 +89,25 @@ class VentilatorPl implements AccessoryPlugin {
       .setCharacteristic(hap.Characteristic.SerialNumber, "FAN001");
 
     log.info("Switch finished initializing!");
-    setInterval(() => {
+    /*setInterval(() => {
       this.communicate(0, "no", 0).then((rep) => {
         this.status = rep;
       });
-    }, 1000 * 15);
+    }, 1000 * 30);*/
   }
 
   // Handle requests
 
   handleActiveGet() {
-    this.log.info(this.status);
-    return this.status.power || this.ventilatorService.getCharacteristic(hap.Characteristic.Active).value || 0;
+    switch(this.status.power) {
+      case 0:
+        return hap.Characteristic.Active.INACTIVE;
+      case 1:
+        return hap.Characteristic.Active.ACTIVE;
+      default:
+        this.log.debug("Got invalid response power");
+        return hap.Characteristic.Active.INACTIVE;
+    }
   }
   handleActiveSet(value: CharacteristicValue) {
     const curval = this.status.power;
@@ -105,17 +117,21 @@ class VentilatorPl implements AccessoryPlugin {
           this.communicate(1, "power", 0).then((rep) => {
             this.status = rep;
           });
+          this.log.debug("Power 0");
           break;
         case hap.Characteristic.Active.ACTIVE:
+          /*
           this.communicate(1, "power", 1).then((rep) => {
             this.status = rep;
           });
+          */
+          this.log.debug("Power 1");
           break;
       }
     }
   }
   handleRotationSpeedGet() {
-    return this.status.speed * 25 || this.ventilatorService.getCharacteristic(hap.Characteristic.RotationSpeed).value || 0;
+    return (this.status.speed * 25);
   }
   handleRotationSpeedSet(value: CharacteristicValue) {
     const valnum: any = value.valueOf();
@@ -125,7 +141,15 @@ class VentilatorPl implements AccessoryPlugin {
     });
   }
   handleSwingModeGet() {
-    return this.status.swing || this.ventilatorService.getCharacteristic(hap.Characteristic.SwingMode).value || 0;
+    switch(this.status.swing) {
+      case 0:
+        return hap.Characteristic.SwingMode.SWING_DISABLED;
+      case 1:
+        return hap.Characteristic.SwingMode.SWING_ENABLED;
+      default:
+        this.log.debug("Got invalid response swing");
+        return hap.Characteristic.SwingMode.SWING_DISABLED;
+    }
   }
   handleSwingModeSet(value: CharacteristicValue) {
     switch (value) {
