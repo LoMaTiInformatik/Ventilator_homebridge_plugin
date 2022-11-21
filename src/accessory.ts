@@ -53,6 +53,7 @@ class VentilatorPl implements AccessoryPlugin {
   private readonly name: string;
   private readonly ip: string;
   private status;
+  private queue;
 
   private readonly ventilatorService: Service;
   private readonly informationService: Service;
@@ -66,9 +67,7 @@ class VentilatorPl implements AccessoryPlugin {
       speed: 0,
       swing: 0
     };
-    this.communicate(0, "no", 0).then((rep) => {
-      this.status = rep;
-    });
+    this.communicate(0, "no", 0);
 
     this.ventilatorService = new hap.Service.Fanv2(this.name);
     this.ventilatorService.getCharacteristic(hap.Characteristic.Active)
@@ -89,17 +88,15 @@ class VentilatorPl implements AccessoryPlugin {
       .setCharacteristic(hap.Characteristic.SerialNumber, "FAN001");
 
     log.info("Switch finished initializing!");
-    /*setInterval(() => {
-      this.communicate(0, "no", 0).then((rep) => {
-        this.status = rep;
-      });
-    }, 1000 * 30);*/
+    setInterval(() => {
+      this.managequeue();
+    }, 1000 * 3);
   }
 
   // Handle requests
 
   handleActiveGet() {
-    switch(this.status.power) {
+    switch (this.status.power) {
       case 0:
         return hap.Characteristic.Active.INACTIVE;
       case 1:
@@ -114,9 +111,7 @@ class VentilatorPl implements AccessoryPlugin {
     if (true) {
       switch (value) {
         case hap.Characteristic.Active.INACTIVE:
-          this.communicate(1, "power", 0).then((rep) => {
-            this.status = rep;
-          });
+          this.communicate(1, "speed", 0);
           this.log.debug("Power 0");
           break;
         case hap.Characteristic.Active.ACTIVE:
@@ -136,12 +131,10 @@ class VentilatorPl implements AccessoryPlugin {
   handleRotationSpeedSet(value: CharacteristicValue) {
     const valnum: any = value.valueOf();
     let num = Math.floor(valnum / 25);
-    this.communicate(1, "speed", num).then((rep) => {
-      this.status = rep;
-    });
+    this.communicate(1, "speed", num);
   }
   handleSwingModeGet() {
-    switch(this.status.swing) {
+    switch (this.status.swing) {
       case 0:
         return hap.Characteristic.SwingMode.SWING_DISABLED;
       case 1:
@@ -154,74 +147,57 @@ class VentilatorPl implements AccessoryPlugin {
   handleSwingModeSet(value: CharacteristicValue) {
     switch (value) {
       case hap.Characteristic.SwingMode.SWING_DISABLED:
-        this.communicate(1, "swing", 0).then((rep) => {
-          this.status = rep;
-        });
+        this.communicate(1, "swing", 0);
         break;
       case hap.Characteristic.SwingMode.SWING_ENABLED:
-        this.communicate(1, "swing", 1).then((rep) => {
-          this.status = rep;
-        });
+        this.communicate(1, "swing", 1);
         break;
     }
   }
 
   // Utils
+  async managequeue() {
+    if (typeof (this.queue[0]) == "string") {
+      let response;
+      response = await axios.get(this.queue.shift, { timeout: 2000 });
+      let s = String(response.data);
+      s = s.replace(/\\n/g, '\\n')
+        .replace(/\\'/g, '\\\'')
+        .replace(/\\"/g, '\"')
+        .replace(/\\&/g, '\\&')
+        .replace(/\\r/g, '\\r')
+        .replace(/\\t/g, '\\t')
+        .replace(/\\b/g, '\\b')
+        .replace(/\\f/g, '\\f');
+      // Remove non-printable and other non-valid JSON characters
+      // eslint-disable-next-line no-control-regex
+      s = s.replace(/[\u0000-\u0019]+/g, '');
+      console.log(s);
+
+      const data = JSON.parse(s);
+      if (response.status == 400) {
+        const text = "An error occured while getting the data: ";
+        console.warn(text + data.errmsg);
+      }
+      this.status = data;
+      this.log.debug("Request handled")
+    }
+    return;
+  }
 
   async communicate(type: number, act: string, value: number) {
-    let response;
+    let request;
     switch (type) {
       case 0:
-        try {
-          response = await axios.get(this.ip + "/getStatus", {timeout: 2000});
-        } catch {
-          return {
-            power: 0,
-            speed: 0,
-            swing: 0
-          };
-        }
+        request = (this.ip + "/getStatus");
         break;
 
       case 1:
-        try {
-          response = await axios.get(this.ip + "/?act=" + act + "&arg1=" + String(value), {timeout: 3000});
-        } catch {
-          return {
-            power: 0,
-            speed: 0,
-            swing: 0
-          };
-        }
+        request = (this.ip + "/?act=" + act + "&arg1=" + String(value));
         break;
 
     }
-    let s = String(response.data);
-    s = s.replace(/\\n/g, '\\n')
-      .replace(/\\'/g, '\\\'')
-      .replace(/\\"/g, '\"')
-      .replace(/\\&/g, '\\&')
-      .replace(/\\r/g, '\\r')
-      .replace(/\\t/g, '\\t')
-      .replace(/\\b/g, '\\b')
-      .replace(/\\f/g, '\\f');
-    // Remove non-printable and other non-valid JSON characters
-    // eslint-disable-next-line no-control-regex
-    s = s.replace(/[\u0000-\u0019]+/g, '');
-    console.log(response.data);
-    console.log(s);
-
-    const data = JSON.parse(s);
-    if (response.status == 400) {
-      const text = "An error occured while getting the data: ";
-      console.log(text + data.errmsg);
-      return {
-        power: 0,
-        speed: 0,
-        swing: 0
-      };
-    }
-    return data;
+    this.queue.push(request);
   }
 
   /*
