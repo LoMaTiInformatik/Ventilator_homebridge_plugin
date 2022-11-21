@@ -53,7 +53,7 @@ class VentilatorPl implements AccessoryPlugin {
   private readonly name: string;
   private readonly ip: string;
   private status;
-  private queue;
+  private queue: Array<string> = [];
 
   private readonly ventilatorService: Service;
   private readonly informationService: Service;
@@ -159,7 +159,7 @@ class VentilatorPl implements AccessoryPlugin {
   async managequeue() {
     if (typeof (this.queue[0]) == "string") {
       let response;
-      response = await axios.get(this.queue.shift, { timeout: 2000 });
+      response = await axios.get(this.queue[0], { timeout: 2000 });
       let s = String(response.data);
       s = s.replace(/\\n/g, '\\n')
         .replace(/\\'/g, '\\\'')
@@ -180,7 +180,8 @@ class VentilatorPl implements AccessoryPlugin {
         console.warn(text + data.errmsg);
       }
       this.status = data;
-      this.log.debug("Request handled")
+      this.log.debug("Request handled");
+      this.queue.shift();
     }
     return;
   }
