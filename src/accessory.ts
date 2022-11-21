@@ -53,7 +53,11 @@ class VentilatorPl implements AccessoryPlugin {
   private readonly name: string;
   private readonly ip: string;
   private status;
-  private queue: Array<string> = [];
+  private queue = {
+    power: 0,
+    speed: 0,
+    swing: 0
+  };
 
   private readonly ventilatorService: Service;
   private readonly informationService: Service;
@@ -157,48 +161,90 @@ class VentilatorPl implements AccessoryPlugin {
 
   // Utils
   async managequeue() {
-    if (typeof (this.queue[0]) == "string") {
-      let response;
-      response = await axios.get(this.queue[0], { timeout: 2000 });
-      let s = String(response.data);
-      s = s.replace(/\\n/g, '\\n')
-        .replace(/\\'/g, '\\\'')
-        .replace(/\\"/g, '\"')
-        .replace(/\\&/g, '\\&')
-        .replace(/\\r/g, '\\r')
-        .replace(/\\t/g, '\\t')
-        .replace(/\\b/g, '\\b')
-        .replace(/\\f/g, '\\f');
-      // Remove non-printable and other non-valid JSON characters
-      // eslint-disable-next-line no-control-regex
-      s = s.replace(/[\u0000-\u0019]+/g, '');
-      console.log(s);
+    if (this.queue != this.status) {
+      for (let i = 1; i >= 3; i++) {
+        let act = "";
+        let val: number = 0;
+        switch (i) {
+          case 1:
+            if (this.queue.power != this.status.power) {
+              act = "power";
+              val = this.queue.power;
+            }
+            break;
+          case 2:
+            if (this.queue.speed != this.status.speed) {
+              act = "speed";
+              val = this.queue.speed;
+            }
+            break;
+          case 3:
+            if (this.queue.swing != this.status.swing) {
+              act = "swing";
+              val = this.queue.swing;
+            }
+            break;
+          default:
+        }
+        let response;
+        response = await axios.get((this.ip + "/?act=" + act + "&arg1=" + String(val)), { timeout: 2000 });
+        let s = String(response.data);
+        s = s.replace(/\\n/g, '\\n')
+          .replace(/\\'/g, '\\\'')
+          .replace(/\\"/g, '\"')
+          .replace(/\\&/g, '\\&')
+          .replace(/\\r/g, '\\r')
+          .replace(/\\t/g, '\\t')
+          .replace(/\\b/g, '\\b')
+          .replace(/\\f/g, '\\f');
+        // Remove non-printable and other non-valid JSON characters
+        // eslint-disable-next-line no-control-regex
+        s = s.replace(/[\u0000-\u0019]+/g, '');
+        console.log(s);
 
-      const data = JSON.parse(s);
-      if (response.status == 400) {
-        const text = "An error occured while getting the data: ";
-        console.warn(text + data.errmsg);
+        const data = JSON.parse(s);
+        if (response.status == 400) {
+          const text = "An error occured while getting the data: ";
+          console.warn(text + data.errmsg);
+        }
+        this.status = data;
+        this.log.debug("Request handled");
       }
-      this.status = data;
-      this.log.debug("Request handled");
-      this.queue.shift();
     }
     return;
   }
 
   async communicate(type: number, act: string, value: number) {
-    let request;
     switch (type) {
       case 0:
-        request = (this.ip + "/getStatus");
+        let response;
+        response = await axios.get((this.ip + "/getStatus"), { timeout: 2000 });
+        let s = String(response.data);
+        s = s.replace(/\\n/g, '\\n')
+          .replace(/\\'/g, '\\\'')
+          .replace(/\\"/g, '\"')
+          .replace(/\\&/g, '\\&')
+          .replace(/\\r/g, '\\r')
+          .replace(/\\t/g, '\\t')
+          .replace(/\\b/g, '\\b')
+          .replace(/\\f/g, '\\f');
+        // Remove non-printable and other non-valid JSON characters
+        // eslint-disable-next-line no-control-regex
+        s = s.replace(/[\u0000-\u0019]+/g, '');
+        console.log(s);
+
+        const data = JSON.parse(s);
+        if (response.status == 400) {
+          const text = "An error occured while getting the data: ";
+          console.warn(text + data.errmsg);
+        }
+        this.status = data;
         break;
 
       case 1:
-        request = (this.ip + "/?act=" + act + "&arg1=" + String(value));
+        this.queue[act] = value;
         break;
-
     }
-    this.queue.push(request);
   }
 
   /*
