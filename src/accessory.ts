@@ -222,6 +222,7 @@ class VentilatorPl implements AccessoryPlugin {
           console.warn(text + data.errmsg);
         }
         this.status = data;
+        this.queue[act] = data[act];
         this.log.debug("Request handled");
         setTimeout(() => {this.processrequest = false;}, 1000);
       } else {
@@ -261,11 +262,12 @@ class VentilatorPl implements AccessoryPlugin {
               console.warn(text + data.errmsg);
             }
             this.status = data;
+            this.queue = data;
           } catch (err: any) {
             const text = "An error occured while getting the data: ";
             console.warn(text + err.message);
           }
-          setTimeout(() => { this.processrequest = false }, 1000);
+          setTimeout(() => {this.processrequest = false;}, 1000);
         } else {
           const text = "An error occured while getting the data: Already processing request!";
           console.warn(text);
