@@ -58,6 +58,8 @@ class VentilatorPl implements AccessoryPlugin {
     speed: 0,
     swing: 0
   };
+  private queuestate: number = 0;
+  private processrequest = false;
 
   private readonly ventilatorService: Service;
   private readonly informationService: Service;
@@ -93,6 +95,10 @@ class VentilatorPl implements AccessoryPlugin {
 
     log.info("Switch finished initializing!");
     setInterval(() => {
+      this.queuestate += 1;
+      if (this.queuestate >= 4) {
+        this.queuestate = 1;
+      }
       this.managequeue();
     }, 1000 * 3);
   }
@@ -162,29 +168,37 @@ class VentilatorPl implements AccessoryPlugin {
   // Utils
   async managequeue() {
     if (this.queue != this.status) {
-      for (let i = 1; i >= 3; i++) {
+      if (this.processrequest == false) {
+        let i = this.queuestate;
         let act = "";
         let val: number = 0;
-        switch (i) {
-          case 1:
-            if (this.queue.power != this.status.power) {
-              act = "power";
-              val = this.queue.power;
-            }
-            break;
-          case 2:
-            if (this.queue.speed != this.status.speed) {
-              act = "speed";
-              val = this.queue.speed;
-            }
-            break;
-          case 3:
-            if (this.queue.swing != this.status.swing) {
-              act = "swing";
-              val = this.queue.swing;
-            }
-            break;
-          default:
+        if (i == 1) {
+          if (this.queue.power != this.status.power) {
+            act = "power";
+            val = this.queue.power;
+          } else {
+            i++;
+          }
+        }
+        if (i == 2) {
+          if (this.queue.speed != this.status.speed) {
+            act = "speed";
+            val = this.queue.speed;
+          } else {
+            i++;
+          }
+        }
+        if (i == 3) {
+          if (this.queue.swing != this.status.swing) {
+            act = "swing";
+            val = this.queue.swing;
+          } else {
+            i++;
+          }
+        }
+        if (i >= 4) {
+          this.log.debug("No request to make");
+          return;
         }
         let response;
         response = await axios.get((this.ip + "/?act=" + act + "&arg1=" + String(val)), { timeout: 2000 });
@@ -209,6 +223,11 @@ class VentilatorPl implements AccessoryPlugin {
         }
         this.status = data;
         this.log.debug("Request handled");
+        setTimeout(() => {this.processrequest = false;}, 1000);
+      } else {
+        this.queuestate -= 1;
+        const text = "An error occured while getting the data: Already processing request!";
+        console.warn(text);
       }
     }
     return;
@@ -217,34 +236,52 @@ class VentilatorPl implements AccessoryPlugin {
   async communicate(type: number, act: string, value: number) {
     switch (type) {
       case 0:
-        let response;
-        response = await axios.get((this.ip + "/getStatus"), { timeout: 2000 });
-        let s = String(response.data);
-        s = s.replace(/\\n/g, '\\n')
-          .replace(/\\'/g, '\\\'')
-          .replace(/\\"/g, '\"')
-          .replace(/\\&/g, '\\&')
-          .replace(/\\r/g, '\\r')
-          .replace(/\\t/g, '\\t')
-          .replace(/\\b/g, '\\b')
-          .replace(/\\f/g, '\\f');
-        // Remove non-printable and other non-valid JSON characters
-        // eslint-disable-next-line no-control-regex
-        s = s.replace(/[\u0000-\u0019]+/g, '');
-        console.log(s);
+        if (this.processrequest == false) {
+          this.processrequest = true;
+          try {
+            let response;
+            response = await axios.get((this.ip + "/getStatus"), { timeout: 2000 });
+            let s = String(response.data);
+            s = s.replace(/\\n/g, '\\n')
+              .replace(/\\'/g, '\\\'')
+              .replace(/\\"/g, '\"')
+              .replace(/\\&/g, '\\&')
+              .replace(/\\r/g, '\\r')
+              .replace(/\\t/g, '\\t')
+              .replace(/\\b/g, '\\b')
+              .replace(/\\f/g, '\\f');
+            // Remove non-printable and other non-valid JSON characters
+            // eslint-disable-next-line no-control-regex
+            s = s.replace(/[\u0000-\u0019]+/g, '');
+            console.log(s);
 
-        const data = JSON.parse(s);
-        if (response.status == 400) {
-          const text = "An error occured while getting the data: ";
-          console.warn(text + data.errmsg);
+            const data = JSON.parse(s);
+            if (response.status == 400) {
+              const text = "An error occured while getting the data: ";
+              console.warn(text + data.errmsg);
+            }
+            this.status = data;
+          } catch (err: any) {
+            const text = "An error occured while getting the data: ";
+            console.warn(text + err.message);
+          }
+          setTimeout(() => { this.processrequest = false }, 1000);
+        } else {
+          const text = "An error occured while getting the data: Already processing request!";
+          console.warn(text);
+          this.status = {
+            power: 0,
+            speed: 0,
+            swing: 0
+          }
         }
-        this.status = data;
         break;
 
       case 1:
         this.queue[act] = value;
         break;
     }
+    return;
   }
 
   /*
