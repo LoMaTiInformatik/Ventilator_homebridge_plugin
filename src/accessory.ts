@@ -58,7 +58,6 @@ class VentilatorPl implements AccessoryPlugin {
     speed: 0,
     swing: 0
   };
-  private queuestate: number = 0;
   private processrequest = false;
 
   private readonly ventilatorService: Service;
@@ -95,12 +94,8 @@ class VentilatorPl implements AccessoryPlugin {
 
     log.info("Switch finished initializing!");
     setInterval(() => {
-      this.queuestate += 1;
-      if (this.queuestate >= 4) {
-        this.queuestate = 1;
-      }
       this.managequeue();
-    }, 1000 * 3);
+    }, 1000 * 5);
   }
 
   // Handle requests
@@ -169,18 +164,10 @@ class VentilatorPl implements AccessoryPlugin {
   async managequeue() {
     if (this.queue != this.status) {
       if (this.processrequest == false) {
-        let i = this.queuestate;
+        let i = 1;
         let act = "";
         let val: number = 0;
         if (i == 1) {
-          if (this.queue.power != this.status.power) {
-            act = "power";
-            val = this.queue.power;
-          } else {
-            i++;
-          }
-        }
-        if (i == 2) {
           if (this.queue.speed != this.status.speed) {
             act = "speed";
             val = this.queue.speed;
@@ -188,7 +175,7 @@ class VentilatorPl implements AccessoryPlugin {
             i++;
           }
         }
-        if (i == 3) {
+        if (i == 2) {
           if (this.queue.swing != this.status.swing) {
             act = "swing";
             val = this.queue.swing;
@@ -196,12 +183,18 @@ class VentilatorPl implements AccessoryPlugin {
             i++;
           }
         }
-        if (i >= 4) {
+        if (i >= 3) {
           this.log.debug("No request to make");
           return;
         }
         let response;
-        response = await axios.get((this.ip + "/?act=" + act + "&arg1=" + String(val)), { timeout: 2000 });
+        try {
+          response = await axios.get((this.ip + "/?act=" + act + "&arg1=" + String(val)), { timeout: 4000 });
+        } catch(errmsgaxios) {
+          this.log.debug("An error occoured while getting the data: " + errmsgaxios);
+          setTimeout(() => {this.processrequest = false;}, 1000);
+          return;
+        }
         let s = String(response.data);
         s = s.replace(/\\n/g, '\\n')
           .replace(/\\'/g, '\\\'')
@@ -214,7 +207,7 @@ class VentilatorPl implements AccessoryPlugin {
         // Remove non-printable and other non-valid JSON characters
         // eslint-disable-next-line no-control-regex
         s = s.replace(/[\u0000-\u0019]+/g, '');
-        console.log(s);
+        this.log.debug(s);
 
         const data = JSON.parse(s);
         if (response.status == 400) {
@@ -225,7 +218,6 @@ class VentilatorPl implements AccessoryPlugin {
         this.log.debug("Request handled");
         setTimeout(() => {this.processrequest = false;}, 1000);
       } else {
-        this.queuestate -= 1;
         const text = "An error occured while getting the data: Already processing request!";
         console.warn(text);
       }
