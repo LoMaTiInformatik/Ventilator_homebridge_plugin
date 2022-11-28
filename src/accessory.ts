@@ -220,7 +220,7 @@ class VentilatorPl implements AccessoryPlugin {
         setTimeout(() => {this.processrequest = false;}, 1000);
       } else {
         const text = "An error occured while getting the data: Already processing request!";
-        console.warn(text);
+        this.log.debug(text);
       }
     }
     return;
