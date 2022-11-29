@@ -26,7 +26,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/LoMaTiInformatik/Ventilator_homebridge_plugin"
+    "url": "git://github.com/LoMaTiInformatik/Ventilator_homebridge_plugin.git"
   },
   "bugs": {
     "url": "http://github.com/LoMaTiInformatik/Ventilator_homebridge_plugin/issues"
