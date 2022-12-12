@@ -95,7 +95,7 @@ class VentilatorPl implements AccessoryPlugin {
     log.info("Switch finished initializing!");
     setInterval(() => {
       this.managequeue();
-    }, 1000 * 3);
+    }, 1000 * 5);
   }
 
   // Handle requests
@@ -189,7 +189,7 @@ class VentilatorPl implements AccessoryPlugin {
         }
         let response;
         try {
-          response = await axios.get((this.ip + "/?act=" + act + "&arg1=" + String(val)), { timeout: 5000 });
+          response = await axios.get((this.ip + "/?act=" + act + "&arg1=" + String(val)), { timeout: 4000 });
         } catch(errmsgaxios) {
           this.log.debug("An error occoured while getting the data: " + errmsgaxios);
           setTimeout(() => {this.processrequest = false;}, 1000);
