@@ -72,7 +72,7 @@ class VentilatorPl implements AccessoryPlugin {
       speed: 0,
       swing: 0
     };
-    this.communicate(0, "no", 0);
+    //this.communicate(0, "no", 0);
 
     this.ventilatorService = new hap.Service.Fanv2(this.name);
     this.ventilatorService.getCharacteristic(hap.Characteristic.Active)
@@ -95,7 +95,7 @@ class VentilatorPl implements AccessoryPlugin {
     log.info("Switch finished initializing!");
     setInterval(() => {
       this.managequeue();
-    }, 1000 * 5);
+    }, 1000 * 3);
   }
 
   // Handle requests
@@ -135,7 +135,9 @@ class VentilatorPl implements AccessoryPlugin {
   }
   handleRotationSpeedSet(value: CharacteristicValue) {
     const valnum: any = value.valueOf();
-    let num = Math.floor(valnum / 25);
+    let num = Math.ceil(valnum / 25);
+    if (num >= 4) {num = 4;}
+    if (valnum == 0) {num = 0;}
     this.communicate(1, "speed", num);
   }
   handleSwingModeGet() {
@@ -189,7 +191,7 @@ class VentilatorPl implements AccessoryPlugin {
         }
         let response;
         try {
-          response = await axios.get((this.ip + "/?act=" + act + "&arg1=" + String(val)), { timeout: 4000 });
+          response = await axios.get((this.ip + "/?act=" + act + "&arg1=" + String(val)), { timeout: 2000 });
         } catch(errmsgaxios) {
           this.log.debug("An error occoured while getting the data: " + errmsgaxios);
           setTimeout(() => {this.processrequest = false;}, 1000);
