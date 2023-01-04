@@ -1,5 +1,5 @@
 {
-    "pluginAlias": "homebridge-arduino-ventilator-lomati",
+    "pluginAlias": "LoMaTiVentilator",
     "pluginType": "accessory",
     "singular": false,
     "schema": {
