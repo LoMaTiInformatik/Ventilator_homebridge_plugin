@@ -44,7 +44,7 @@ let hap: HAP;
  */
 export = (api: API) => {
   hap = api.hap;
-  api.registerAccessory("Ventilator", VentilatorPl);
+  api.registerAccessory("LoMaTiVentilator", VentilatorPl);
 };
 
 class VentilatorPl implements AccessoryPlugin {

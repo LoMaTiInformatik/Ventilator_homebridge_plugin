@@ -1,0 +1,36 @@
+{
+    "pluginAlias": "homebridge-arduino-ventilator-lomati",
+    "pluginType": "accessory",
+    "singular": false,
+    "schema": {
+        "type": "object",
+        "properties": {
+            "name": {
+                "title": "Name of the accessory",
+                "type": "string",
+                "required": true,
+                "placeholder": "Ventilator",
+                "description": "The name of the acessory, that will be displayed in HomeKit."
+            },
+            "ip": {
+                "title": "IP-Address",
+                "type": "string",
+                "required": true,
+                "placeholder": "127.0.0.1",
+                "description": "The IP-Address of the arduino controller.",
+                "format": "ipv4"
+            },
+            "errlevel": {
+                "title": "Error level",
+                "type": "integer",
+                "default": 1,
+                "oneOf": [
+                    {"title": "Errors only", "enum": [1]},
+                    {"title": "Errors and warnings", "enum": [2]},
+                    {"title": "Errors, warnings and debug", "enum": [3]}
+                ],
+                "required": true
+            }
+        }
+    }
+}
