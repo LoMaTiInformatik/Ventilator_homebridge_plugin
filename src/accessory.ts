@@ -24,6 +24,7 @@ import {
 import axios from 'axios';
 import { json } from "stream/consumers";
 
+// Code aus dem Homebridge Example Plugin (Start)
 /*
  * IMPORTANT NOTICE
  *
@@ -57,7 +58,7 @@ export = (api: API) => {
 };
 
 class VentilatorPl implements AccessoryPlugin {
-
+// Code aus dem Homebridge Example Plugin (Ende)
   private readonly log: Logging;
   private readonly name: string;
   private readonly ip: string;
@@ -69,12 +70,14 @@ class VentilatorPl implements AccessoryPlugin {
   };
   private processrequest = false;
 
+  // Code aus dem Homebridge Example Plugin (Start)
   private readonly ventilatorService: Service;
   private readonly informationService: Service;
 
   constructor(log: Logging, config: AccessoryConfig, api: API) {
     this.log = log;
     this.name = config.name;
+    // Code aus dem Homebridge Example Plugin (Ende)
     this.ip = "http://" + config.ip;
     this.status = {
       power: 0,
@@ -101,7 +104,9 @@ class VentilatorPl implements AccessoryPlugin {
       .setCharacteristic(hap.Characteristic.Model, "Arduino Ventilator")
       .setCharacteristic(hap.Characteristic.SerialNumber, "FAN001");
 
-    log.info("Switch finished initializing!");
+    // Code aus dem Homebridge Example Plugin (Start)
+      log.info("Switch finished initializing!");
+    // Code aus dem Homebridge Example Plugin (Ende)
     setInterval(() => {
       this.managequeue();
     }, 1000 * 3);
