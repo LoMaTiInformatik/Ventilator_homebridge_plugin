@@ -58,9 +58,9 @@ export = (api: API) => {
 };
 
 class VentilatorPl implements AccessoryPlugin {
-// Code aus dem Homebridge Example Plugin (Ende)
   private readonly log: Logging;
   private readonly name: string;
+  // Code aus dem Homebridge Example Plugin (Ende)
   private readonly ip: string;
   private status;
   private queue = {
