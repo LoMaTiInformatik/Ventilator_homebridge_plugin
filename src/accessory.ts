@@ -1,3 +1,11 @@
+/*
+  *
+  * Der gesamte Code (außer explizit markiert) wurde von Lois Gilly geschrieben.
+  * Homebridge Example Plugin: (https://github.com/homebridge/homebridge-examples/tree/master/accessory-example-typescript)
+  * 
+*/
+
+// Code aus dem Homebridge Example Plugin (Start)
 import {
   AccessoryConfig,
   AccessoryPlugin,
@@ -11,6 +19,7 @@ import {
   Logging,
   Service
 } from "homebridge";
+// Code aus dem Homebridge Example Plugin (Ende)
 
 import axios from 'axios';
 import { json } from "stream/consumers";
@@ -44,7 +53,7 @@ let hap: HAP;
  */
 export = (api: API) => {
   hap = api.hap;
-  api.registerAccessory("LoMaTiVentilator", VentilatorPl);
+  api.registerAccessory("homebridge-arduino-ventilator-lomati", "Ventilator", VentilatorPl);
 };
 
 class VentilatorPl implements AccessoryPlugin {
@@ -280,6 +289,8 @@ class VentilatorPl implements AccessoryPlugin {
     return;
   }
 
+  // Code aus dem Homebridge Example Plugin (Start)
+
   /*
    * This method is optional to implement. It is called when HomeKit ask to identify the accessory.
    * Typical this only ever happens at the pairing process.
@@ -298,5 +309,7 @@ class VentilatorPl implements AccessoryPlugin {
       this.ventilatorService,
     ];
   }
+
+  // Code aus dem Homebridge Example Plugin (Ende)
 
 }
